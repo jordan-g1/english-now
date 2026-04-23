@@ -1,0 +1,30 @@
+      </div>
+      <div class="faq-item">
+        <h3>The AI isn't responding or the session froze.</h3>
+        <p>This is usually a network issue. Check your internet connection and try again. If the problem persists, force-quit the app and start a new session.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How is my English level determined?</h3>
+        <p>Your level is set during onboarding based on your self-assessment. You can update it anytime in the Profile tab. The AI also adapts dynamically within sessions based on how you're performing.</p>
+      </div>
+      <div class="faq-item">
+        <h3>I was charged but can't access the app.</h3>
+        <p>Tap "Restore" on the paywall screen. If that doesn't work, email us directly with your Apple ID and we'll sort it out immediately.</p>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Contact Us</h2>
+      <div class="contact-card">
+        <p>Can't find what you're looking for? Send us an email and we'll get back to you as soon as possible.</p>
+        <a href="mailto:jragriffith04b@gmail.com">Email Support</a>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <p>© 2026 Jordan Griffith</p>
+    <br/>
+    <a href="./privacy-policy.html">Privacy Policy</a>
+    <a href="./terms-and-conditions.html">Terms of Service</a>
+  </footer>
+</body>
+</html>
