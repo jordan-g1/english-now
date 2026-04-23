@@ -1,0 +1,5 @@
+.Trash
+node_modules
+.git
+ios
+android

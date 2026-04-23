@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "english-now",
+    "slug": "english-now",
+    "scheme": "englishnow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "backgroundColor": "#ffffff",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jordangriffith.englishnow",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "EnglishNow needs the microphone so you can practice speaking English.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.479959770358-boj4b9mfsseipfua41p6jp0hafq204rc"
+        }
+      ],
+      "expo-apple-authentication"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d4377c89-e28c-4c2e-8eaa-4ce5a529423b"
+      }
+    },
+    "owner": "jordang1"
+  }
+}
