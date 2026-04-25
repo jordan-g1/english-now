@@ -17,12 +17,12 @@ export default function RootLayout() {
   async function checkAndRoute() {
     const { data: { session } } = await supabase.auth.getSession();
 
+    initializePurchases(session?.user.id);
+
     if (!session) {
       router.replace('/onboarding');
       return;
     }
-
-    initializePurchases(session.user.id);
 
     const isSubscribed = await checkSubscription();
     if (isSubscribed) {

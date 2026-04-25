@@ -30,8 +30,15 @@ Deno.serve(async (req) => {
     body: formData,
   });
 
-  const data = await response.json();
+  if (!response.ok) {
+    const err = await response.text();
+    return new Response(JSON.stringify({ error: `OpenAI error: ${response.status}`, detail: err }), {
+      status: 502,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
+  const data = await response.json();
   return new Response(JSON.stringify({ text: data.text ?? '' }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

@@ -1,26 +1,34 @@
-// RevenueCat is mocked for Expo Go development.
-// Replace with real implementation when doing a dev build.
-// TODO: swap mock for real when dev account + provisioning is ready
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
-export const RC_API_KEY = 'appl_YOUR_REVENUECAT_API_KEY';
+const RC_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
 
-export function initializePurchases(userId?: string) {
-  console.log('RevenueCat mock: initializePurchases', userId);
+export function initializePurchases(userId?: string | null) {
+  Purchases.setLogLevel(LOG_LEVEL.ERROR);
+  Purchases.configure({
+    apiKey: RC_API_KEY_IOS,
+    appUserID: userId ?? null,
+  });
 }
 
 export async function getOfferings() {
-  return null;
+  const offerings = await Purchases.getOfferings();
+  return offerings.current;
 }
 
-export async function purchasePackage(_pkg: any) {
-  return {};
+export async function purchasePackage(pkg: any) {
+  const { customerInfo } = await Purchases.purchasePackage(pkg);
+  return customerInfo;
 }
 
 export async function restorePurchases() {
-  return { entitlements: { active: {} } };
+  return await Purchases.restorePurchases();
 }
 
 export async function checkSubscription(): Promise<boolean> {
-  // Set to true to bypass paywall during development
-  return true;
+  try {
+    const info = await Purchases.getCustomerInfo();
+    return typeof info.entitlements.active['premium'] !== 'undefined';
+  } catch {
+    return false;
+  }
 }

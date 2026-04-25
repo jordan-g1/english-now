@@ -26,6 +26,14 @@ Deno.serve(async (req) => {
     }),
   });
 
+  if (!response.ok) {
+    const err = await response.text();
+    return new Response(JSON.stringify({ error: `OpenAI error: ${response.status}`, detail: err }), {
+      status: 502,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const audioBuffer = await response.arrayBuffer();
   const bytes = new Uint8Array(audioBuffer);
 

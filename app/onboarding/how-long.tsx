@@ -4,10 +4,10 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: 'Less than a year', icon: '🌱' },
-  { label: '1–3 years',        icon: '📚' },
-  { label: '3+ years',         icon: '🎓' },
-  { label: 'All my life',      icon: '🌍', subtitle: "It's a second language at home" },
+  { label: 'Less than a year', icon: 'leaf-outline' },
+  { label: '1–3 years',        icon: 'library-outline' },
+  { label: '3+ years',         icon: 'school-outline' },
+  { label: 'All my life',      icon: 'globe-outline', subtitle: "It's a second language at home" },
 ];
 
 export default function HowLongScreen() {

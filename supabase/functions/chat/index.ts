@@ -104,9 +104,24 @@ Or if they made a mistake:
     }),
   });
 
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
+  if (!response.ok) {
+    const err = await response.text();
+    return new Response(JSON.stringify({ error: `OpenAI error: ${response.status}`, detail: err }), {
+      status: 502,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
+  const data = await response.json();
+  const choice = data.choices?.[0]?.message?.content;
+  if (!choice) {
+    return new Response(JSON.stringify({ error: 'Empty response from OpenAI' }), {
+      status: 502,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const content = JSON.parse(choice);
   return new Response(JSON.stringify(content), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

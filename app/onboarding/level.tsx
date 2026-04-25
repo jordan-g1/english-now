@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
-import { Audio } from 'expo-av';
+import { AudioModule, useAudioRecorder, RecordingPresets } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../../lib/supabase';
 import { setOnboarding } from '../../lib/onboardingStore';
@@ -20,7 +20,7 @@ type Status = 'idle' | 'recording' | 'analyzing';
 
 export default function LevelScreen() {
   const [status, setStatus] = useState<Status>('idle');
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -44,16 +44,13 @@ export default function LevelScreen() {
   async function startRecording() {
     if (status !== 'idle') return;
     try {
-      const { status: perm } = await Audio.requestPermissionsAsync();
+      const { status: perm } = await AudioModule.requestRecordingPermissionsAsync();
       if (perm !== 'granted') {
         Alert.alert('Microphone required', 'Please allow microphone access to continue.');
         return;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await rec.startAsync();
-      setRecording(rec);
+      await AudioModule.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      await recorder.record();
       setStatus('recording');
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
@@ -64,15 +61,14 @@ export default function LevelScreen() {
   }
 
   async function stopRecording() {
-    if (status !== 'recording' || !recording) return;
+    if (status !== 'recording') return;
     stopPulse();
     if (timerRef.current) clearInterval(timerRef.current);
     setStatus('analyzing');
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      await recorder.stop();
+      const uri = recorder.uri;
       if (!uri) throw new Error('No audio');
 
       const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
@@ -92,12 +88,13 @@ export default function LevelScreen() {
       });
       if (aErr) throw new Error(aErr.message);
 
-      setOnboarding({ level: assessData.level });
+      const cappedLevel = ['C1', 'C2'].includes(assessData.level) ? 'B2' : assessData.level;
+      setOnboarding({ level: cappedLevel });
 
       router.push({
         pathname: '/onboarding/level-result',
         params: {
-          level: assessData.level,
+          level: cappedLevel,
           title: assessData.title,
           summary: assessData.summary,
           strengths: JSON.stringify(assessData.strengths),

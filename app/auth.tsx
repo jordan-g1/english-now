@@ -64,6 +64,8 @@ export default function AuthScreen() {
             native_language: ob.language ?? null,
             goal: ob.goal ?? null,
           });
+          router.replace('/onboarding/name');
+          return;
         }
       }
       router.replace('/(tabs)');
@@ -103,6 +105,8 @@ export default function AuthScreen() {
             native_language: ob.language ?? null,
             goal: ob.goal ?? null,
           });
+          router.replace('/onboarding/name');
+          return;
         }
       }
       router.replace('/(tabs)');
@@ -126,15 +130,23 @@ export default function AuthScreen() {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         const user = data.user;
-        if (user) {
-          const ob = getOnboarding();
-          await supabase.from('user_profiles').insert({
-            id: user.id,
-            cefr_level: ob.level ?? null,
-            native_language: ob.language ?? null,
-            goal: ob.goal ?? null,
-          });
+        if (!user) {
+          // Email confirmation is on — user needs to verify before signing in
+          Alert.alert(
+            'Check your email',
+            `We sent a confirmation link to ${email}. Please verify your email then sign in.`,
+          );
+          return;
         }
+        const ob = getOnboarding();
+        await supabase.from('user_profiles').insert({
+          id: user.id,
+          cefr_level: ob.level ?? null,
+          native_language: ob.language ?? null,
+          goal: ob.goal ?? null,
+        });
+        router.replace('/onboarding/name');
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -252,10 +264,6 @@ export default function AuthScreen() {
             </View>
           )}
 
-          {/* DEV ONLY */}
-          <TouchableOpacity style={styles.skipBtn} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.skipText}>Continue without account</Text>
-          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

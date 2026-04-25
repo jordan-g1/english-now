@@ -4,10 +4,10 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: 'Work & career',      icon: '💼', subtitle: 'Interviews, meetings, presentations' },
-  { label: 'Travel',             icon: '✈️', subtitle: 'Navigate airports, hotels, restaurants' },
-  { label: 'Social confidence',  icon: '💬', subtitle: 'Make friends, small talk, dating' },
-  { label: 'Exam prep',          icon: '📝', subtitle: 'IELTS, TOEFL, Cambridge' },
+  { label: 'Work & career',      icon: 'briefcase-outline',      subtitle: 'Interviews, meetings, presentations' },
+  { label: 'Travel',             icon: 'airplane-outline',        subtitle: 'Navigate airports, hotels, restaurants' },
+  { label: 'Social confidence',  icon: 'chatbubble-outline',      subtitle: 'Make friends, small talk, dating' },
+  { label: 'Exam prep',          icon: 'document-text-outline',   subtitle: 'IELTS, TOEFL, Cambridge' },
 ];
 
 export default function GoalScreen() {

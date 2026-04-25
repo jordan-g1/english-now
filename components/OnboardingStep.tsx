@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 type Props = {
@@ -31,7 +32,7 @@ export default function OnboardingStep({
     <>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
+          <Ionicons name="chevron-back" size={18} color="#111827" />
         </TouchableOpacity>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
@@ -86,7 +87,7 @@ export function OptionCard({ label, icon, subtitle, selected, onPress }: OptionP
     >
       {icon && (
         <View style={[styles.optionIcon, selected && styles.optionIconSelected]}>
-          <Text style={styles.optionIconText}>{icon}</Text>
+          <Ionicons name={icon as any} size={20} color={selected ? '#fff' : '#2563EB'} />
         </View>
       )}
       <View style={styles.optionTextWrap}>
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backArrow: { fontSize: 18, color: '#111827' },
+  backArrow: { fontSize: 18, color: '#111827' }, // kept for compat
   progressTrack: {
     flex: 1,
     height: 4,

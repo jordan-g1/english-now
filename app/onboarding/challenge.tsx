@@ -4,10 +4,10 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: 'Speaking confidence',    icon: '😰', subtitle: "I freeze up when I need to speak" },
-  { label: 'Finding the right words', icon: '🔍', subtitle: "I know what I want to say but can't express it" },
-  { label: 'Grammar mistakes',        icon: '📖', subtitle: 'I make errors that embarrass me' },
-  { label: 'Pronunciation',           icon: '👄', subtitle: "People don't understand me clearly" },
+  { label: 'Speaking confidence',     icon: 'alert-circle-outline',  subtitle: "I freeze up when I need to speak" },
+  { label: 'Finding the right words', icon: 'search-outline',        subtitle: "I know what I want to say but can't express it" },
+  { label: 'Grammar mistakes',        icon: 'book-outline',          subtitle: 'I make errors that embarrass me' },
+  { label: 'Pronunciation',           icon: 'mic-outline',           subtitle: "People don't understand me clearly" },
 ];
 
 export default function ChallengeScreen() {

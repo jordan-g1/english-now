@@ -4,9 +4,9 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: '5 minutes',   icon: '⚡', subtitle: 'Quick daily practice — better than nothing' },
-  { label: '10 minutes',  icon: '🔥', subtitle: 'The sweet spot for steady improvement' },
-  { label: '15+ minutes', icon: '🏆', subtitle: 'Serious about getting fluent fast' },
+  { label: '5 minutes',   icon: 'flash-outline',  subtitle: 'Quick daily practice — better than nothing' },
+  { label: '10 minutes',  icon: 'flame-outline',  subtitle: 'The sweet spot for steady improvement' },
+  { label: '15+ minutes', icon: 'trophy-outline', subtitle: 'Serious about getting fluent fast' },
 ];
 
 export default function CommitmentScreen() {

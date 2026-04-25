@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { getOnboarding } from '../../lib/onboardingStore';
@@ -28,7 +29,7 @@ export default function GeneratingScreen() {
       setTimeout(() => setStepIndex(i), i * 700)
     );
 
-    const done = setTimeout(() => router.push('/paywall'), 3600);
+    const done = setTimeout(() => router.push('/onboarding/plan-ready'), 3600);
 
     return () => {
       intervals.forEach(clearTimeout);
@@ -44,7 +45,9 @@ export default function GeneratingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>🗣️</Text>
+        <View style={styles.iconWrap}>
+          <Ionicons name="mic-outline" size={36} color="#2563EB" />
+        </View>
         <Text style={styles.title}>Building your{'\n'}personalized tutor</Text>
 
         {data.goal && (
@@ -76,7 +79,7 @@ function Tag({ label }: { label: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
-  emoji: { fontSize: 56, marginBottom: 8 },
+  iconWrap: { width: 80, height: 80, borderRadius: 24, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   title: { fontSize: 30, fontWeight: '800', color: '#111827', textAlign: 'center', lineHeight: 38 },
   summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   tag: { backgroundColor: '#EFF6FF', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },

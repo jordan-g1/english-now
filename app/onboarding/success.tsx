@@ -4,10 +4,10 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: 'Have a conversation without freezing', icon: '😌', subtitle: 'Speak naturally when the moment comes' },
-  { label: 'Get a promotion or new job',           icon: '💼', subtitle: 'English is holding my career back' },
-  { label: 'Travel and feel independent',          icon: '🌍', subtitle: "Handle anything that comes up abroad" },
-  { label: 'Pass an English exam',                 icon: '🏆', subtitle: 'IELTS, TOEFL, or similar' },
+  { label: 'Have a conversation without freezing', icon: 'chatbubbles-outline', subtitle: 'Speak naturally when the moment comes' },
+  { label: 'Get a promotion or new job',           icon: 'briefcase-outline',  subtitle: 'English is holding my career back' },
+  { label: 'Travel and feel independent',          icon: 'globe-outline',      subtitle: "Handle anything that comes up abroad" },
+  { label: 'Pass an English exam',                 icon: 'trophy-outline',     subtitle: 'IELTS, TOEFL, or similar' },
 ];
 
 export default function SuccessScreen() {

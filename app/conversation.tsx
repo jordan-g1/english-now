@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
-import { Audio } from 'expo-av';
+import { AudioModule, useAudioRecorder, useAudioPlayer, useAudioPlayerStatus, RecordingPresets } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -53,8 +53,9 @@ export default function ConversationScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [status, setStatus] = useState<Status>('idle');
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const player = useAudioPlayer(null);
+  const playerStatus = useAudioPlayerStatus(player);
   const [typeMode, setTypeMode] = useState(false);
   const [typeInput, setTypeInput] = useState('');
 
@@ -74,14 +75,20 @@ export default function ConversationScreen() {
     setMessages([opener]);
 
     return () => {
-      sound?.unloadAsync();
-      recording?.stopAndUnloadAsync();
+      try { player.remove(); } catch (_) {}
     };
   }, []);
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   }, [messages]);
+
+  useEffect(() => {
+    if (playerStatus.didJustFinish && status === 'speaking') {
+      setStatus('idle');
+      AudioModule.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+    }
+  }, [playerStatus.didJustFinish]);
 
   function startPulse() {
     pulseLoop.current = Animated.loop(
@@ -101,18 +108,13 @@ export default function ConversationScreen() {
   async function startRecording() {
     if (status !== 'idle') return;
     try {
-      const { status: permStatus } = await Audio.requestPermissionsAsync();
+      const { status: permStatus } = await AudioModule.requestRecordingPermissionsAsync();
       if (permStatus !== 'granted') {
         Alert.alert('Microphone permission required', 'Please allow microphone access in your device settings.');
         return;
       }
-
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await rec.startAsync();
-      setRecording(rec);
+      await AudioModule.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      await recorder.record();
       setStatus('recording');
       startPulse();
     } catch (e) {
@@ -122,14 +124,13 @@ export default function ConversationScreen() {
   }
 
   async function stopRecording() {
-    if (status !== 'recording' || !recording) return;
+    if (status !== 'recording') return;
     stopPulse();
     setStatus('transcribing');
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      await recorder.stop();
+      const uri = recorder.uri;
 
       if (!uri) throw new Error('No audio recorded');
 
@@ -210,7 +211,7 @@ export default function ConversationScreen() {
     }
 
     setStatus('speaking');
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+    await AudioModule.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
 
     const { data: speakData, error: speakError } = await supabase.functions.invoke('speak', {
       body: { text: reply },
@@ -219,20 +220,11 @@ export default function ConversationScreen() {
     if (!speakError && speakData?.audio) {
       const audioPath = `${FileSystem.cacheDirectory}tts_response.mp3`;
       await FileSystem.writeAsStringAsync(audioPath, speakData.audio, { encoding: 'base64' });
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri: audioPath });
-      setSound(newSound);
-      await newSound.playAsync();
-      newSound.setOnPlaybackStatusUpdate((s) => {
-        if (s.isLoaded && s.didJustFinish) {
-          newSound.unloadAsync();
-          setSound(null);
-          setStatus('idle');
-          Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        }
-      });
+      player.replace({ uri: audioPath });
+      player.play();
     } else {
       setStatus('idle');
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      await AudioModule.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
     }
   }
 
@@ -243,7 +235,7 @@ export default function ConversationScreen() {
         text: 'End session',
         style: 'destructive',
         onPress: () => {
-          sound?.unloadAsync();
+          try { player.remove(); } catch (_) {}
           router.replace('/session-summary');
         },
       },

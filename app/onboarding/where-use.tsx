@@ -4,10 +4,10 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: 'At work',                icon: '🏢', subtitle: 'Meetings, emails, colleagues' },
-  { label: 'Traveling',              icon: '✈️', subtitle: 'Airports, hotels, new places' },
-  { label: 'Online',                 icon: '💻', subtitle: 'Social media, gaming, forums' },
-  { label: 'With friends or family', icon: '👨‍👩‍👧', subtitle: 'People close to me speak English' },
+  { label: 'At work',                icon: 'business-outline',   subtitle: 'Meetings, emails, colleagues' },
+  { label: 'Traveling',              icon: 'airplane-outline',   subtitle: 'Airports, hotels, new places' },
+  { label: 'Online',                 icon: 'laptop-outline',     subtitle: 'Social media, gaming, forums' },
+  { label: 'With friends or family', icon: 'people-outline',     subtitle: 'People close to me speak English' },
 ];
 
 export default function WhereUseScreen() {

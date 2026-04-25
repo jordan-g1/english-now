@@ -11,31 +11,50 @@ import { supabase } from '../../lib/supabase';
 import { colors, TAB_BAR_HEIGHT } from '../../lib/theme';
 import { getPhraseOfTheDay } from '../../lib/phrases';
 
+const TIPS = [
+  { emoji: '💡', tip: 'Use "Could you…" instead of "Can you…" for polite requests. It sounds more professional.' },
+  { emoji: '🗣️', tip: '"Make" vs "Do" — use "make" for creating things (make a plan, make a mistake), "do" for tasks and actions (do homework, do the dishes).' },
+  { emoji: '⏱️', tip: 'Use present perfect ("I have eaten") for past actions with a connection to now. Use simple past ("I ate") for finished events at a specific time.' },
+  { emoji: '🤝', tip: 'Small talk tip: after answering a question, bounce it back. "I\'m from Spain — how about you?" keeps conversations going naturally.' },
+  { emoji: '📢', tip: 'Filler phrases like "That\'s a good question" or "Let me think about that" give you time to gather your thoughts without awkward silence.' },
+  { emoji: '✍️', tip: '"Since" vs "For" — use "since" with a point in time (since Monday), "for" with a duration (for three years).' },
+  { emoji: '💬', tip: 'Agreeing politely: "Absolutely", "Exactly", "That\'s a fair point" sound more natural than just "Yes" in professional settings.' },
+  { emoji: '🔑', tip: 'Avoid starting sentences with "I think that I…" — just say "I think…". Removing the extra "that" sounds more fluent.' },
+  { emoji: '🌍', tip: '"Interested in" (noun/gerund) vs "Interesting for" (incorrect) — you are interested IN something, not interesting for it.' },
+  { emoji: '📖', tip: '"Borrow" vs "Lend" — you borrow FROM someone, you lend TO someone. "Can I borrow your pen?" ✓  "Can you lend me your pen?" ✓' },
+  { emoji: '🎯', tip: 'To sound more confident, avoid over-hedging. "I think maybe it could possibly be…" → "I think it\'s…" is cleaner and more persuasive.' },
+  { emoji: '😊', tip: 'Use "I was wondering if…" to make requests softer and more polite than "Do you…" or "Can you…"' },
+];
+
+function getTipOfTheDay() {
+  const index = Math.floor(Date.now() / 86400000) % TIPS.length;
+  return TIPS[index];
+}
+
 const SCENARIOS = [
-  { id: 'restaurant', label: 'Ordering Food', sub: 'Restaurants, cafes, takeaway', icon: 'restaurant-outline' },
-  { id: 'interview',  label: 'Job Interview',  sub: 'Questions, answers, confidence', icon: 'briefcase-outline'  },
-  { id: 'smalltalk',  label: 'Small Talk',     sub: 'Weather, weekends, new people', icon: 'sunny-outline'      },
-  { id: 'doctor',     label: 'Doctor Visit',   sub: 'Symptoms, appointments, advice', icon: 'medkit-outline'     },
-  { id: 'shopping',   label: 'Shopping',       sub: 'Prices, sizes, asking for help', icon: 'bag-outline'        },
+  { id: 'free',       label: 'Open Chat',      sub: 'Talk about anything',    emoji: '💬', accent: '#16A34A', accentBg: '#F0FDF4' },
+  { id: 'interview',  label: 'Job Interview',  sub: 'Impress & get hired',    emoji: '💼', accent: '#2563EB', accentBg: '#EFF6FF' },
+  { id: 'smalltalk',  label: 'Small Talk',     sub: 'Meet new people',        emoji: '☀️', accent: '#EAB308', accentBg: '#FEFCE8' },
+  { id: 'restaurant', label: 'Ordering Food',  sub: 'Restaurants & cafes',    emoji: '🍽️', accent: '#F97316', accentBg: '#FFF7ED' },
+  { id: 'doctor',     label: 'Doctor Visit',   sub: 'Explain symptoms',       emoji: '🏥', accent: '#EF4444', accentBg: '#FEF2F2' },
+  { id: 'shopping',   label: 'Shopping',       sub: 'Ask & negotiate',        emoji: '🛍️', accent: '#8B5CF6', accentBg: '#F5F3FF' },
 ];
 
 const SCENARIO_LABELS: Record<string, string> = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]));
-SCENARIO_LABELS['free'] = 'Open Chat';
 
-const LEVEL_CONTEXT: Record<string, string> = {
-  A1: 'You can understand basic phrases and introduce yourself. Keep going — A2 is just around the corner.',
-  A2: 'You can handle simple conversations on familiar topics. At B1 you\'ll handle most travel situations.',
-  B1: 'You can get by in most everyday situations. B2 means speaking fluently on almost any topic.',
-  B2: 'You speak fluently on most topics. At C1 you\'ll sound natural in professional settings.',
-  C1: 'You speak at an advanced level with occasional errors. C2 is near-native fluency.',
-  C2: 'You\'re at mastery level — focus on naturalness, nuance, and cultural fluency.',
-};
-
-function getGreeting() {
+function getGreeting(firstName: string | null) {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  const time = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  return firstName ? `${time}, ${firstName}` : time;
+}
+
+function getEncouragement(totalSessions: number, practicedToday: boolean, streak: number): string {
+  if (totalSessions === 0) return "Let's start with your first conversation. Pick any scenario below.";
+  if (practicedToday && streak >= 3) return `🔥 ${streak}-day streak — you're on a roll. Keep it up!`;
+  if (practicedToday) return 'Great session today! See you tomorrow.';
+  if (streak >= 2) return `You've practiced ${streak} days in a row — don't break it now.`;
+  if (streak === 1) return 'You practiced yesterday — keep the streak alive!';
+  return 'Ready to practice today? Pick a scenario and jump in.';
 }
 
 function getLast7Days() {
@@ -54,29 +73,32 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [streak, setStreak] = useState(0);
   const [practicedToday, setPracticedToday] = useState(false);
-  const [lastSession, setLastSession] = useState<{ scenario: string } | null>(null);
+  const [totalSessions, setTotalSessions] = useState(0);
   const [cefrLevel, setCefrLevel] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState<string | null>(null);
   const [practicedDays, setPracticedDays] = useState<Set<string>>(new Set());
-  const [correction, setCorrection] = useState<Correction | null>(null);
-  const [correctionDismissed, setCorrectionDismissed] = useState(false);
-  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [corrections, setCorrections] = useState<Correction[]>([]);
+  const [correctionsDismissed, setCorrectionsDismissed] = useState(false);
+  const [selectedCorrection, setSelectedCorrection] = useState<Correction | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const phrase = getPhraseOfTheDay();
+  const tip = getTipOfTheDay();
   const last7 = getLast7Days();
 
   useFocusEffect(useCallback(() => {
-    setCorrectionDismissed(false);
+    setCorrectionsDismissed(false);
     fetchData();
   }, []));
 
   async function fetchData() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     const [{ data: sessions }, { data: profile }, { data: corrections }] = await Promise.all([
-      supabase.from('sessions').select('scenario, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-      supabase.from('user_profiles').select('cefr_level').eq('id', user.id).single(),
-      supabase.from('corrections').select('id, original, corrected, explanation, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+      supabase.from('sessions').select('scenario, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(100),
+      supabase.from('user_profiles').select('cefr_level, first_name').eq('id', user.id).single(),
+      supabase.from('corrections').select('id, original, corrected, explanation, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
     ]);
 
     if (sessions) {
@@ -87,104 +109,216 @@ export default function HomeScreen() {
       while (days.has(d.toDateString())) { count++; d.setDate(d.getDate() - 1); }
       setStreak(count);
       setPracticedDays(days);
+      setTotalSessions(sessions.length);
       setPracticedToday(sessions.some((s) => new Date(s.created_at).toDateString() === new Date().toDateString()));
-      setLastSession(sessions[0] ?? null);
     }
 
     setCefrLevel(profile?.cefr_level ?? null);
-    setCorrection(corrections?.[0] ?? null);
+    setFirstName((profile as any)?.first_name ?? null);
+    setCorrections(corrections ?? []);
+    setLoading(false);
   }
 
   function startScenario(id: string) {
     router.push({ pathname: '/pre-session', params: { scenario: id } });
   }
 
+  const encouragement = getEncouragement(totalSessions, practicedToday, streak);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <View style={styles.skeletonTitle} />
+              <View style={styles.skeletonSub} />
+            </View>
+          </View>
+          <View style={styles.skeletonEncouragement} />
+        </View>
+        <View style={styles.primarySection}>
+          <View style={styles.skeletonPrimaryCard} />
+        </View>
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          <View style={styles.skeletonSectionLabel} />
+          <View style={styles.skeletonStatsStrip} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 }}
       >
+
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{getGreeting()}</Text>
-            {cefrLevel && <Text style={styles.levelLine}>{cefrLevel} · English level</Text>}
+          <View style={styles.headerTop}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.greeting}>{getGreeting(firstName)}</Text>
+              {cefrLevel && (
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelBadgeText}>{cefrLevel}</Text>
+                  <Text style={styles.levelBadgeDot}>·</Text>
+                  <Text style={styles.levelBadgeLabel}>English level</Text>
+                </View>
+              )}
+            </View>
+            {streak > 0 && (
+              <View style={styles.streakPill}>
+                <Text style={styles.streakPillText}>🔥 {streak}</Text>
+              </View>
+            )}
           </View>
-          <View style={styles.streakPill}>
-            <Text style={styles.streakPillText}>🔥 {streak}</Text>
-          </View>
+          <Text style={styles.encouragement}>{encouragement}</Text>
         </View>
 
         {/* Primary action */}
         <View style={styles.primarySection}>
           {!practicedToday ? (
             <TouchableOpacity style={styles.practiceCard} onPress={() => startScenario('free')} activeOpacity={0.9}>
-              <View>
-                <Text style={styles.practiceCardEyebrow}>Daily practice</Text>
-                <Text style={styles.practiceCardTitle}>Start today's session</Text>
-                <Text style={styles.practiceCardSub}>Open conversation with your AI tutor</Text>
-              </View>
+              <View style={styles.practiceCardDecorA} />
+              <View style={styles.practiceCardDecorB} />
+              <Text style={styles.practiceCardEyebrow}>
+                {totalSessions === 0 ? "Let's go 🎉" : 'Daily practice'}
+              </Text>
+              <Text style={styles.practiceCardTitle}>
+                {totalSessions === 0 ? 'Start your first\nconversation' : "Start today's\nsession"}
+              </Text>
+              <Text style={styles.practiceCardSub}>
+                {totalSessions === 0
+                  ? 'Your AI tutor is ready. No judgement, just practice.'
+                  : 'Open conversation with your AI tutor'}
+              </Text>
               <View style={styles.practiceCardBtn}>
-                <Ionicons name="mic" size={18} color={colors.primary} />
-                <Text style={styles.practiceCardBtnText}>Begin</Text>
+                <Ionicons name="mic" size={15} color={colors.primary} />
+                <Text style={styles.practiceCardBtnText}>{totalSessions === 0 ? 'Let\'s go' : 'Begin'}</Text>
               </View>
             </TouchableOpacity>
           ) : (
             <View style={styles.doneCard}>
-              <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+              <Text style={styles.doneCardEmoji}>🎉</Text>
               <View style={styles.doneCardText}>
-                <Text style={styles.doneCardTitle}>Practiced today</Text>
+                <Text style={styles.doneCardTitle}>Done for today!</Text>
                 <Text style={styles.doneCardSub}>
-                  {streak > 1 ? `${streak} day streak — keep it up` : 'Great start!'}
+                  {streak > 1 ? `${streak}-day streak — you're crushing it.` : 'Great start — come back tomorrow!'}
                 </Text>
               </View>
             </View>
           )}
         </View>
 
-        {/* Week view */}
+        {/* Stats strip — only shown once there's something to show */}
+        {totalSessions > 0 && (
+          <View style={styles.statsStrip}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{totalSessions}</Text>
+              <Text style={styles.statLabel}>sessions</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{practicedDays.size}</Text>
+              <Text style={styles.statLabel}>days practiced</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{streak}</Text>
+              <Text style={styles.statLabel}>day streak</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Scenarios */}
+        <View style={styles.scenarioSection}>
+          <Text style={styles.sectionLabel}>Practice scenarios</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scenarioScroll}
+          >
+            {SCENARIOS.map((s) => (
+              <TouchableOpacity
+                key={s.id}
+                style={styles.scenarioCard}
+                onPress={() => startScenario(s.id)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.scenarioEmojiWrap, { backgroundColor: s.accentBg }]}>
+                  <Text style={styles.scenarioEmoji}>{s.emoji}</Text>
+                </View>
+                <Text style={styles.scenarioCardLabel}>{s.label}</Text>
+                <Text style={styles.scenarioCardSub}>{s.sub}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Week streak */}
         <View style={styles.section}>
+          <Text style={styles.sectionLabel}>This week</Text>
           <View style={styles.weekCard}>
             {last7.map((day, i) => {
               const practiced = practicedDays.has(day.toDateString());
               const isToday = day.toDateString() === new Date().toDateString();
               return (
                 <View key={i} style={styles.dayCol}>
-                  <Text style={styles.dayLetter}>{DAY_LETTERS[day.getDay()]}</Text>
                   <View style={[
                     styles.dayDot,
                     practiced && styles.dayDotFilled,
                     isToday && !practiced && styles.dayDotToday,
+                    isToday && practiced && styles.dayDotTodayFilled,
                   ]}>
-                    {practiced && <Ionicons name="checkmark" size={10} color="#fff" />}
+                    {practiced
+                      ? <Ionicons name="checkmark" size={13} color="#fff" />
+                      : <Text style={[styles.dayLetter, isToday && styles.dayLetterToday]}>{DAY_LETTERS[day.getDay()]}</Text>
+                    }
                   </View>
+                  {isToday && <View style={styles.todayDot} />}
                 </View>
               );
             })}
           </View>
         </View>
 
-        {/* Correction review */}
-        {correction && !correctionDismissed && (
+        {/* Corrections from last session */}
+        {corrections.length > 0 && !correctionsDismissed && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Review</Text>
-            <TouchableOpacity style={styles.correctionCard} onPress={() => setShowCorrectionModal(true)} activeOpacity={0.8}>
-              <View style={styles.correctionCardInner}>
-                <View style={styles.correctionTags}>
-                  <View style={styles.wrongTag}><Text style={styles.wrongTagText}>Said</Text></View>
-                  <Text style={styles.correctionOriginal} numberOfLines={1}>"{correction.original}"</Text>
+            <Text style={styles.sectionLabel}>From your last session</Text>
+            <View style={styles.correctionsCard}>
+              {corrections.map((c, i) => (
+                <View key={c.id}>
+                  <TouchableOpacity
+                    style={styles.correctionItem}
+                    onPress={() => setSelectedCorrection(c)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.correctionLines}>
+                      <View style={styles.correctionRow}>
+                        <View style={styles.wrongTag}><Text style={styles.wrongTagText}>Said</Text></View>
+                        <Text style={styles.correctionOriginal} numberOfLines={1}>"{c.original}"</Text>
+                      </View>
+                      <View style={styles.correctionRow}>
+                        <View style={styles.rightTag}><Text style={styles.rightTagText}>Better</Text></View>
+                        <Text style={styles.correctionFixed} numberOfLines={1}>"{c.corrected}"</Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+                  </TouchableOpacity>
+                  {i < corrections.length - 1 && <View style={styles.correctionDivider} />}
                 </View>
-                <View style={styles.correctionTags}>
-                  <View style={styles.rightTag}><Text style={styles.rightTagText}>Better</Text></View>
-                  <Text style={styles.correctionFixed} numberOfLines={1}>"{correction.corrected}"</Text>
-                </View>
-                <Text style={styles.correctionTap}>Tap for full explanation</Text>
-              </View>
-              <TouchableOpacity onPress={() => setCorrectionDismissed(true)} style={styles.dismissBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Ionicons name="close" size={16} color={colors.textMuted} />
+              ))}
+              <TouchableOpacity
+                onPress={() => setCorrectionsDismissed(true)}
+                style={styles.correctionsDismiss}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.correctionsDismissText}>Dismiss</Text>
               </TouchableOpacity>
-            </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -192,123 +326,58 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Phrase of the day</Text>
           <View style={styles.phraseCard}>
-            <Text style={styles.phraseText}>"{phrase.phrase}"</Text>
+            <Text style={styles.phraseQuote}>"</Text>
+            <Text style={styles.phraseText}>{phrase.phrase}</Text>
             <Text style={styles.phraseMeaning}>{phrase.meaning}</Text>
+            <View style={styles.phraseDivider} />
             <View style={styles.phraseExampleRow}>
-              <Text style={styles.phraseExampleLabel}>Example  </Text>
+              <Text style={styles.phraseExampleLabel}>EXAMPLE  </Text>
               <Text style={styles.phraseExample}>{phrase.example}</Text>
             </View>
           </View>
         </View>
 
-        {/* Open Chat */}
-        {practicedToday && (
-          <View style={styles.section}>
-            <TouchableOpacity style={styles.openChatRow} onPress={() => startScenario('free')} activeOpacity={0.8}>
-              <View style={styles.openChatIcon}>
-                <Ionicons name="chatbubbles-outline" size={18} color={colors.primary} />
-              </View>
-              <View style={styles.openChatText}>
-                <Text style={styles.openChatLabel}>Open Chat</Text>
-                <Text style={styles.openChatSub}>Talk about anything</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Continue */}
-        {lastSession && SCENARIO_LABELS[lastSession.scenario] && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Continue</Text>
-            <TouchableOpacity style={styles.row} onPress={() => startScenario(lastSession.scenario)} activeOpacity={0.8}>
-              <View style={styles.rowIcon}>
-                <Ionicons name="refresh-outline" size={16} color={colors.textSub} />
-              </View>
-              <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>{SCENARIO_LABELS[lastSession.scenario]}</Text>
-                <Text style={styles.rowSub}>Last session</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Scenarios */}
+        {/* Quick tip */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Scenarios</Text>
-          <Text style={styles.sectionSub}>Practice real-life situations with your AI tutor</Text>
-          <View style={styles.scenarioList}>
-            {SCENARIOS.map((s, i) => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.row, i < SCENARIOS.length - 1 && styles.rowBorder]}
-                onPress={() => startScenario(s.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.rowIcon}>
-                  <Ionicons name={s.icon as any} size={16} color={colors.textSub} />
-                </View>
-                <View style={styles.rowText}>
-                  <Text style={styles.rowLabel}>{s.label}</Text>
-                  <Text style={styles.rowSub}>{s.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </TouchableOpacity>
-            ))}
+          <Text style={styles.sectionLabel}>Quick tip</Text>
+          <View style={styles.tipCard}>
+            <Text style={styles.tipEmoji}>{tip.emoji}</Text>
+            <Text style={styles.tipText}>{tip.tip}</Text>
           </View>
         </View>
 
-        {/* Level context */}
-        {cefrLevel && LEVEL_CONTEXT[cefrLevel] && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Your Level</Text>
-            <View style={styles.levelContextCard}>
-              <View style={styles.levelContextLeft}>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelBadgeText}>{cefrLevel}</Text>
-                </View>
-              </View>
-              <Text style={styles.levelContextText}>{LEVEL_CONTEXT[cefrLevel]}</Text>
-            </View>
-          </View>
-        )}
-
       </ScrollView>
 
-      {/* Correction modal */}
-      <Modal visible={showCorrectionModal} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowCorrectionModal(false)} />
+      {/* Correction detail modal */}
+      <Modal visible={!!selectedCorrection} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedCorrection(null)} />
         <View style={styles.modalSheet}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Correction</Text>
-            <TouchableOpacity onPress={() => setShowCorrectionModal(false)} style={styles.modalClose}>
+            <TouchableOpacity onPress={() => setSelectedCorrection(null)} style={styles.modalClose}>
               <Ionicons name="close" size={20} color={colors.textSub} />
             </TouchableOpacity>
           </View>
-          {correction && (
+          {selectedCorrection && (
             <View style={styles.modalBody}>
               <View style={styles.modalRow}>
                 <View style={styles.wrongTag}><Text style={styles.wrongTagText}>You said</Text></View>
-                <Text style={styles.modalOriginal}>"{correction.original}"</Text>
+                <Text style={styles.modalOriginal}>"{selectedCorrection.original}"</Text>
               </View>
               <View style={styles.modalRow}>
                 <View style={styles.rightTag}><Text style={styles.rightTagText}>Better</Text></View>
-                <Text style={styles.modalCorrected}>"{correction.corrected}"</Text>
+                <Text style={styles.modalCorrected}>"{selectedCorrection.corrected}"</Text>
               </View>
               <View style={styles.explanationBox}>
                 <Text style={styles.explanationLabel}>Why</Text>
-                <Text style={styles.explanationText}>{correction.explanation}</Text>
+                <Text style={styles.explanationText}>{selectedCorrection.explanation}</Text>
               </View>
               <Text style={styles.modalDate}>
-                From {new Date(correction.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                From {new Date(selectedCorrection.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
               </Text>
             </View>
           )}
-          <TouchableOpacity
-            style={styles.modalDismissBtn}
-            onPress={() => { setShowCorrectionModal(false); setCorrectionDismissed(true); }}
-          >
+          <TouchableOpacity style={styles.modalDismissBtn} onPress={() => setSelectedCorrection(null)}>
             <Text style={styles.modalDismissBtnText}>Got it</Text>
           </TouchableOpacity>
         </View>
@@ -320,174 +389,245 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
 
+  // Header
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 20,
+    gap: 10,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
   },
-  greeting: { fontSize: 24, fontWeight: '800', color: colors.text },
-  levelLine: { fontSize: 13, color: colors.textMuted, marginTop: 2, fontWeight: '500' },
+  headerLeft: { gap: 6 },
+  greeting: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.3 },
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  levelBadgeText: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  levelBadgeDot: { fontSize: 13, color: colors.textMuted },
+  levelBadgeLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
   streakPill: {
-    backgroundColor: colors.card,
+    backgroundColor: '#FFF7ED',
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#FED7AA',
   },
-  streakPillText: { fontSize: 13, fontWeight: '700', color: colors.text },
+  streakPillText: { fontSize: 13, fontWeight: '700', color: '#EA580C' },
+  encouragement: {
+    fontSize: 15,
+    color: colors.textSub,
+    lineHeight: 22,
+  },
 
-  primarySection: { paddingHorizontal: 16, marginBottom: 16 },
+  // Primary action
+  primarySection: { paddingHorizontal: 16, marginBottom: 20 },
   practiceCard: {
     backgroundColor: colors.primary,
-    borderRadius: 18,
-    padding: 20,
-    gap: 16,
+    borderRadius: 22,
+    padding: 24,
+    gap: 8,
+    overflow: 'hidden',
     shadowColor: colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  practiceCardEyebrow: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 2 },
-  practiceCardTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  practiceCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+  practiceCardDecorA: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    top: -60,
+    right: -60,
+  },
+  practiceCardDecorB: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    bottom: -30,
+    left: 20,
+  },
+  practiceCardEyebrow: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 },
+  practiceCardTitle: { fontSize: 28, fontWeight: '800', color: '#fff', lineHeight: 34, marginTop: 2 },
+  practiceCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 20, marginBottom: 6 },
   practiceCardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#fff',
     alignSelf: 'flex-start',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
   },
   practiceCardBtnText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+
   doneCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 18,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#BBF7D0',
   },
+  doneCardEmoji: { fontSize: 32 },
   doneCardText: { flex: 1 },
-  doneCardTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
-  doneCardSub: { fontSize: 13, color: colors.textSub, marginTop: 2 },
+  doneCardTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  doneCardSub: { fontSize: 13, color: colors.textSub, marginTop: 3, lineHeight: 19 },
 
-  section: { paddingHorizontal: 16, marginBottom: 16 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4 },
-  sectionSub: { fontSize: 13, color: colors.textMuted, marginBottom: 10 },
-
-  weekCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
+  // Stats strip
+  statsStrip: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dayCol: { alignItems: 'center', gap: 6 },
-  dayLetter: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  dayDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dayDotFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dayDotToday: { borderColor: colors.primary, borderWidth: 2 },
-
-  levelContextCard: {
+    marginHorizontal: 16,
+    marginBottom: 24,
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-start',
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    paddingVertical: 16,
   },
-  levelContextLeft: { paddingTop: 2 },
-  levelBadge: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  levelBadgeText: { fontSize: 13, fontWeight: '800', color: colors.primary },
-  levelContextText: { flex: 1, fontSize: 13, color: colors.textSub, lineHeight: 20 },
+  statItem: { flex: 1, alignItems: 'center', gap: 3 },
+  statNum: { fontSize: 22, fontWeight: '800', color: colors.text },
+  statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  statDivider: { width: 1, backgroundColor: colors.border, alignSelf: 'stretch', marginVertical: 4 },
 
-  correctionCard: {
+  // Scenarios
+  scenarioSection: { marginBottom: 24 },
+  scenarioScroll: { paddingHorizontal: 16, gap: 10 },
+  scenarioCard: {
+    width: 140,
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  correctionCardInner: { flex: 1, gap: 6 },
-  correctionTags: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  wrongTag: { backgroundColor: '#FEE2E2', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  wrongTagText: { fontSize: 10, color: colors.error, fontWeight: '700' },
-  rightTag: { backgroundColor: '#DCFCE7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  rightTagText: { fontSize: 10, color: colors.success, fontWeight: '700' },
-  correctionOriginal: { fontSize: 13, color: colors.error, flex: 1 },
-  correctionFixed: { fontSize: 13, color: colors.success, fontWeight: '600', flex: 1 },
-  correctionTap: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  dismissBtn: { padding: 2 },
-
-  phraseCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
+    borderRadius: 18,
     padding: 16,
     gap: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
   },
-  phraseText: { fontSize: 17, fontWeight: '700', color: colors.text },
-  phraseMeaning: { fontSize: 13, color: colors.textSub, lineHeight: 20 },
-  phraseExampleRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 2 },
-  phraseExampleLabel: { fontSize: 12, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
-  phraseExample: { fontSize: 13, color: colors.textSub, fontStyle: 'italic', flex: 1 },
-
-  openChatRow: {
-    backgroundColor: colors.card,
+  scenarioEmojiWrap: {
+    width: 48,
+    height: 48,
     borderRadius: 14,
-    padding: 14,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+  },
+  scenarioEmoji: { fontSize: 24 },
+  scenarioCardLabel: { fontSize: 14, fontWeight: '700', color: colors.text },
+  scenarioCardSub: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+  sectionLabel: { fontSize: 12, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 12, paddingHorizontal: 16 },
+
+  // Week calendar
+  section: { marginBottom: 24 },
+  weekCard: {
+    backgroundColor: '#F0F6FF',
+    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginHorizontal: 16,
+  },
+  dayCol: { alignItems: 'center', gap: 8 },
+  dayLetter: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  dayLetterToday: { color: colors.primary, fontWeight: '800' },
+  dayDot: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: '#fff',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: '#DDE8FB',
+  },
+  dayDotFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dayDotToday: { borderColor: colors.primary, borderWidth: 2, backgroundColor: '#fff' },
+  dayDotTodayFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
+  todayDot: {
+    width: 5, height: 5, borderRadius: 3,
+    backgroundColor: colors.primary,
+    marginTop: 2,
+  },
+
+  // Corrections
+  correctionsCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
+    marginHorizontal: 16,
   },
-  openChatIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  openChatText: { flex: 1 },
-  openChatLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
-  openChatSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  correctionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  correctionLines: { flex: 1, gap: 7 },
+  correctionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  wrongTag: { backgroundColor: '#FEE2E2', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  wrongTagText: { fontSize: 10, color: colors.error, fontWeight: '700' },
+  rightTag: { backgroundColor: '#DCFCE7', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  rightTagText: { fontSize: 10, color: colors.success, fontWeight: '700' },
+  correctionOriginal: { fontSize: 13, color: colors.error, flex: 1 },
+  correctionFixed: { fontSize: 13, color: colors.success, fontWeight: '600', flex: 1 },
+  correctionDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: 16 },
+  correctionsDismiss: { paddingVertical: 12, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border },
+  correctionsDismissText: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
 
-  scenarioList: { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
-  row: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, backgroundColor: colors.card },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  rowText: { flex: 1 },
-  rowLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
-  rowSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  // Phrase
+  phraseCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
+    padding: 18,
+    gap: 6,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  phraseQuote: { fontSize: 36, fontWeight: '800', color: '#FDE68A', lineHeight: 32, marginBottom: -4 },
+  phraseText: { fontSize: 18, fontWeight: '700', color: '#78350F', lineHeight: 26 },
+  phraseMeaning: { fontSize: 13, color: '#92400E', lineHeight: 20 },
+  phraseDivider: { height: 1, backgroundColor: '#FDE68A', marginVertical: 4 },
+  phraseExampleRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  phraseExampleLabel: { fontSize: 11, fontWeight: '700', color: '#B45309', textTransform: 'uppercase', letterSpacing: 0.5 },
+  phraseExample: { fontSize: 13, color: '#92400E', fontStyle: 'italic', flex: 1 },
 
+  // Tip
+  tipCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start',
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  tipEmoji: { fontSize: 24, marginTop: 1 },
+  tipText: { flex: 1, fontSize: 14, color: '#166534', lineHeight: 22, fontWeight: '500' },
+
+  // Skeletons
+  skeletonTitle: { width: 180, height: 28, borderRadius: 8, backgroundColor: '#E5E7EB' },
+  skeletonSub: { width: 100, height: 14, borderRadius: 6, backgroundColor: '#F3F4F6', marginTop: 6 },
+  skeletonEncouragement: { width: '70%', height: 14, borderRadius: 6, backgroundColor: '#F3F4F6' },
+  skeletonPrimaryCard: { height: 160, borderRadius: 22, backgroundColor: '#DBEAFE' },
+  skeletonSectionLabel: { width: 120, height: 11, borderRadius: 5, backgroundColor: '#F3F4F6' },
+  skeletonStatsStrip: { height: 70, borderRadius: 16, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6' },
+
+  // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   modalSheet: {
     backgroundColor: colors.card,

@@ -30,7 +30,7 @@ export default function YourResultsScreen() {
       step={15} totalSteps={18}
       title="Here's what to expect."
       subtitle={`At ${commitment ?? '10 minutes'} a day, ${level?.toLowerCase() ?? 'intermediate'} level:`}
-      onContinue={() => router.push('/onboarding/notifications')}
+      onContinue={() => router.push('/onboarding/generating')}
       continueLabel="Let's do this →"
     >
       <Milestone week="After week 1" text={milestones.week1} color="#2563EB" />
@@ -39,7 +39,7 @@ export default function YourResultsScreen() {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          These results are based on users who practiced consistently at your level. 💜
+          These results are based on users who practiced consistently at your level.
         </Text>
       </View>
     </OnboardingStep>

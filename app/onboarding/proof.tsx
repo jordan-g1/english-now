@@ -7,11 +7,11 @@ export default function ProofScreen() {
     <OnboardingStep
       step={14} totalSteps={18}
       title="People are loving it"
-      subtitle="Join thousands already practicing with EnglishNow."
+      subtitle="Here's what people are saying."
       onContinue={() => router.push('/onboarding/your-results')}
     >
       <View style={styles.reviewCard}>
-        <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+        <Text style={styles.stars}>★★★★★</Text>
         <Text style={styles.reviewText}>
           "I used to be terrified of speaking English at work. After two weeks with EnglishNow I actually volunteered to lead a meeting. My colleagues were shocked."
         </Text>
@@ -21,8 +21,8 @@ export default function ProofScreen() {
       <View style={styles.statCard}>
         <View style={styles.statRow}>
           <View style={styles.stat}>
-            <Text style={styles.statNum}>87%</Text>
-            <Text style={styles.statLabel}>feel more confident{'\n'}after 2 weeks</Text>
+            <Text style={styles.statNum}>6</Text>
+            <Text style={styles.statLabel}>real-life{'\n'}scenarios</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
@@ -31,8 +31,8 @@ export default function ProofScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statNum}>6</Text>
-            <Text style={styles.statLabel}>real-life{'\n'}scenarios</Text>
+            <Text style={styles.statNum}>A1–C2</Text>
+            <Text style={styles.statLabel}>all CEFR{'\n'}levels</Text>
           </View>
         </View>
       </View>

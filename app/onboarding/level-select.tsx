@@ -8,8 +8,6 @@ const CEFR_LEVELS = [
   { label: 'A2', name: 'Elementary',         subtitle: 'I can handle simple, familiar topics' },
   { label: 'B1', name: 'Intermediate',       subtitle: 'I can get by in most everyday situations' },
   { label: 'B2', name: 'Upper Intermediate', subtitle: 'I can speak fluently on most topics' },
-  { label: 'C1', name: 'Advanced',           subtitle: 'I speak fluently with occasional errors' },
-  { label: 'C2', name: 'Mastery',            subtitle: 'I speak at near-native level' },
 ];
 
 export default function LevelSelectScreen() {

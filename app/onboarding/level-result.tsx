@@ -21,8 +21,8 @@ export default function LevelResultScreen() {
     areas: string;
   }>();
 
-  const strengthsList: string[] = JSON.parse(strengths ?? '[]');
-  const areasList: string[] = JSON.parse(areas ?? '[]');
+  const strengthsList: string[] = (() => { try { return JSON.parse(strengths ?? '[]'); } catch { return []; } })();
+  const areasList: string[]    = (() => { try { return JSON.parse(areas    ?? '[]'); } catch { return []; } })();
   const color = LEVEL_COLORS[level] ?? '#2563EB';
 
   return (

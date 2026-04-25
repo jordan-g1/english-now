@@ -4,9 +4,9 @@ import OnboardingStep, { OptionCard } from '../../components/OnboardingStep';
 import { setOnboarding } from '../../lib/onboardingStore';
 
 const OPTIONS = [
-  { label: "Yes — but they didn't stick",  icon: '😔', subtitle: 'I tried but stopped using them' },
-  { label: 'Yes — and I still use them',   icon: '📱', subtitle: "I'm supplementing with EnglishNow" },
-  { label: "No — this is my first",        icon: '🌟', subtitle: "I haven't tried anything yet" },
+  { label: "Yes — but they didn't stick",  icon: 'close-circle-outline',   subtitle: 'I tried but stopped using them' },
+  { label: 'Yes — and I still use them',   icon: 'phone-portrait-outline',  subtitle: "I'm supplementing with EnglishNow" },
+  { label: "No — this is my first",        icon: 'star-outline',            subtitle: "I haven't tried anything yet" },
 ];
 
 export default function TriedAppsScreen() {
